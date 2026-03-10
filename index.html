@@ -6,34 +6,29 @@
     <title>Anatomía Cerebral - Carlos Daniel</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0a0a12; font-family: 'Segoe UI', sans-serif; color: white; }
-        
         #info-panel {
             position: absolute; bottom: 30px; left: 30px;
             background: rgba(20, 15, 30, 0.9); backdrop-filter: blur(15px);
             border-left: 6px solid #b388ff; border-radius: 16px;
-            padding: 25px; max-width: 340px; z-index: 1000;
+            padding: 25px; max-width: 320px; z-index: 1000;
             display: none; border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         #info-panel.active { display: block; animation: fadeIn 0.4s ease; }
-        
         #loading {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%); background: rgba(0,0,0,0.8);
             padding: 20px 40px; border-radius: 50px; z-index: 2000;
             border: 1px solid #7c4dff;
         }
-
         .legend {
             position: absolute; top: 20px; right: 20px;
             background: rgba(0,0,0,0.7); padding: 15px; border-radius: 12px;
             font-size: 13px; border: 1px solid rgba(124, 77, 255, 0.4);
         }
         .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
-
+        .dot { width: 12px; height: 12px; border-radius: 3px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
         button {
             background: #7c4dff; border: none; color: white; 
             padding: 8px 15px; border-radius: 8px; cursor: pointer; 
@@ -44,7 +39,7 @@
 </head>
 <body>
 
-    <div id="loading">⏳ Cargando Modelo 3D...</div>
+    <div id="loading">⏳ Cargando Modelo...</div>
 
     <div id="info-panel">
         <h2 id="info-title" style="color:#b388ff; margin: 0 0 10px 0;">Estructura</h2>
@@ -53,8 +48,9 @@
     </div>
 
     <div class="legend">
-        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Anatomía Detectada</div>
-        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> Hemisferio Cerebral</div>
+        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Zonas Principales</div>
+        <div class="legend-item"><div class="dot" style="background:#4444ff"></div> Hemisferio Izquierdo</div>
+        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> Hemisferio Derecho</div>
         <div class="legend-item"><div class="dot" style="background:#44ff44"></div> Cerebelo</div>
         <div class="legend-item"><div class="dot" style="background:#ff44ff"></div> Tronco Encefálico</div>
     </div>
@@ -75,64 +71,47 @@
 
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a12);
-
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
         camera.position.set(0, 5, 15);
-
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
-
         new OrbitControls(camera, renderer.domElement).enableDamping = true;
-
         scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(5, 10, 7.5);
         scene.add(dirLight);
 
-        // MAPA CORREGIDO: Basado en los IDs reales de tu FBX
-        // MAPA DEFINITIVO: Corregido según tus pruebas visuales
+        // MAPA SEGÚN TU PERCEPCIÓN
         const brainMap = {
-            'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Ubicado debajo de los hemisferios; coordina el equilibrio y la precisión de los movimientos.' },
-            'brain_part_02': { color: 0xffff44, title: 'Hemisferio Derecho', desc: 'Controla el lado izquierdo del cuerpo y se especializa en la creatividad e intuición espacial.' },
-            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Conecta el cerebro con la médula espinal y regula funciones vitales como la respiración.' },
-            'brain_part_06': { color: 0x44ffff, title: 'Hemisferio Izquierdo', desc: 'Controla el lado derecho del cuerpo y se especializa en el lenguaje, la lógica y el análisis.' }
+            'brain_part_06': { color: 0xffff44, title: 'Hemisferio Derecho', desc: 'Procesa la intuición y la creatividad.' },
+            'brain_part_02': { color: 0x44ff44, title: 'Cerebelo', desc: 'Coordina el equilibrio y el movimiento.' },
+            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Controla las funciones vitales.' },
+            // Asignamos la pieza restante (probablemente 04 o 01) al Hemisferio Izquierdo
+            'brain_part_04': { color: 0x4444ff, title: 'Hemisferio Izquierdo', desc: 'Controla el lenguaje y el razonamiento lógico.' }
         };
 
         const loader = new FBXLoader();
-        const url = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
-
-        loader.load(url, (object) => {
+        loader.load('https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx', (object) => {
             const box = new THREE.Box3().setFromObject(object);
             const center = box.getCenter(new THREE.Vector3());
             const size = box.getSize(new THREE.Vector3());
             const scale = 8 / Math.max(size.x, size.y, size.z);
-            
             object.scale.setScalar(scale);
             object.position.sub(center.multiplyScalar(scale));
 
             object.traverse((child) => {
                 if (child.isMesh) {
-                    const nameLower = child.name.toLowerCase();
-                    const data = brainMap[nameLower];
-
+                    const data = brainMap[child.name.toLowerCase()];
                     if (data) {
-                        child.material = new THREE.MeshPhongMaterial({
-                            color: data.color,
-                            transparent: true,
-                            opacity: 0.9,
-                            shininess: 90
-                        });
+                        child.material = new THREE.MeshPhongMaterial({ color: data.color, shininess: 80 });
                         child.userData.info = data;
                     } else {
-                        // Ocultamos piezas que no coincidan con las 4 zonas
-                        child.material = new THREE.MeshPhongMaterial({ color: 0x222222, transparent: true, opacity: 0.1 });
+                        child.material = new THREE.MeshPhongMaterial({ color: 0x111111, transparent: true, opacity: 0.2 });
                         child.userData.ignore = true;
                     }
                 }
             });
-
             scene.add(object);
             document.getElementById('loading').style.display = 'none';
         });
@@ -144,18 +123,13 @@
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-
             const intersects = raycaster.intersectObjects(scene.children, true);
-            
             if (intersects.length > 0) {
                 const mesh = intersects[0].object;
-                
-                // Solo abrimos el panel si la pieza tiene información asignada
                 if (mesh.userData.info && !mesh.userData.ignore) {
-                    const panel = document.getElementById('info-panel');
                     document.getElementById('info-title').innerText = "🧠 " + mesh.userData.info.title;
                     document.getElementById('info-desc').innerText = mesh.userData.info.desc;
-                    panel.classList.add('active');
+                    document.getElementById('info-panel').classList.add('active');
                 } else {
                     document.getElementById('info-panel').classList.remove('active');
                 }
@@ -163,18 +137,10 @@
         });
 
         function animate() {
-            requestAnimationFrame(() => {
-                animate();
-                renderer.render(scene, camera);
-            });
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
         }
         animate();
-
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
     </script>
 </body>
 </html>
