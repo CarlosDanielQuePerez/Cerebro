@@ -3,193 +3,955 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anatomía Cerebral Animada - Carlos Daniel</title>
+    <title>Neuroanatomía 3D — Carlos Daniel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
     <style>
-        body { margin: 0; overflow: hidden; background-color: #0a0a12; font-family: 'Segoe UI', sans-serif; color: white; }
-        
-        #info-panel {
-            position: absolute; bottom: 30px; left: 30px;
-            background: rgba(20, 15, 30, 0.9); backdrop-filter: blur(15px);
-            border-left: 6px solid #b388ff; border-radius: 16px;
-            padding: 25px; max-width: 320px; z-index: 1000;
-            display: none; border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: translateX(-120%);
+        :root {
+            --cyan:    #00f5ff;
+            --violet:  #8b5cf6;
+            --pink:    #f472b6;
+            --green:   #10b981;
+            --yellow:  #fbbf24;
+            --bg:      #040611;
+            --panel-bg: rgba(4, 6, 17, 0.92);
         }
-        #info-panel.active { display: block; transform: translateX(0); }
-        
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Exo 2', sans-serif;
+            color: #e2e8f0;
+            cursor: default;
+        }
+
+        /* ─── CANVAS DE PARTÍCULAS ─── */
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ─── SCANLINE OVERLAY ─── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,245,255,0.015) 2px,
+                rgba(0,245,255,0.015) 4px
+            );
+            pointer-events: none;
+            z-index: 999;
+            animation: scanMove 8s linear infinite;
+        }
+        @keyframes scanMove {
+            from { background-position: 0 0; }
+            to   { background-position: 0 100vh; }
+        }
+
+        /* ─── HEADER ─── */
+        #header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            padding: 20px 35px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(4,6,17,0.9), transparent);
+            animation: fadeDown 1.2s ease forwards;
+        }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: 4px;
+            background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: none;
+        }
+        #header .subtitle {
+            font-size: 0.7rem;
+            letter-spacing: 6px;
+            color: rgba(0,245,255,0.5);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .pulse-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 12px var(--cyan);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.3; transform: scale(0.6); }
+        }
+        .status-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            color: var(--cyan);
+            letter-spacing: 2px;
+            opacity: 0.7;
+        }
+
+        /* ─── LOADING ─── */
         #loading {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); background: rgba(0,0,0,0.8);
-            padding: 20px 40px; border-radius: 50px; z-index: 2000;
-            border: 1px solid #7c4dff; animation: pulse 2s infinite;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        .loader-ring {
+            width: 80px; height: 80px;
+            border: 3px solid rgba(0,245,255,0.1);
+            border-top-color: var(--cyan);
+            border-right-color: var(--violet);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loader-ring-2 {
+            position: absolute;
+            width: 60px; height: 60px;
+            top: 10px; left: 10px;
+            border: 2px solid rgba(244,114,182,0.1);
+            border-bottom-color: var(--pink);
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite reverse;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            color: var(--cyan);
+            animation: typewriter 2s steps(30) infinite;
+        }
+        @keyframes typewriter {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+        }
+        .loader-bar-wrap {
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .loader-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--violet));
+            border-radius: 3px;
+            animation: loadBar 2.5s ease-in-out infinite;
+        }
+        @keyframes loadBar {
+            0% { width: 0%; }
+            60% { width: 85%; }
+            100% { width: 100%; }
         }
 
-        .legend {
-            position: absolute; top: 20px; right: 20px;
-            background: rgba(0,0,0,0.7); padding: 15px; border-radius: 12px;
-            font-size: 13px; border: 1px solid rgba(124, 77, 255, 0.4);
+        /* ─── LEYENDA ─── */
+        #legend {
+            position: absolute;
+            top: 90px; right: 25px;
+            z-index: 100;
+            background: var(--panel-bg);
+            border: 1px solid rgba(0,245,255,0.15);
+            border-radius: 16px;
+            padding: 18px 20px;
+            min-width: 200px;
+            backdrop-filter: blur(20px);
+            animation: fadeLeft 1.4s 0.5s ease both;
+            box-shadow: 0 0 30px rgba(0,245,255,0.05), inset 0 0 20px rgba(0,245,255,0.02);
         }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .dot { width: 12px; height: 12px; border-radius: 50%; }
+        @keyframes fadeLeft {
+            from { opacity: 0; transform: translateX(30px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        #legend .legend-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            color: var(--cyan);
+            margin-bottom: 14px;
+            text-transform: uppercase;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            opacity: 0.8;
+            transition: opacity 0.3s, transform 0.3s;
+            cursor: default;
+        }
+        .legend-item:hover { opacity: 1; transform: translateX(4px); }
+        .legend-dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
+        }
+        .legend-separator {
+            height: 1px;
+            background: rgba(255,255,255,0.05);
+            margin: 12px 0;
+        }
+        .legend-hint {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+            letter-spacing: 1px;
+        }
 
-        @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
-        
-        button {
-            background: #7c4dff; border: none; color: white; 
-            padding: 8px 15px; border-radius: 8px; cursor: pointer; 
-            margin-top: 15px; transition: 0.3s;
+        /* ─── CONTROLES ─── */
+        #controls {
+            position: absolute;
+            bottom: 30px; right: 25px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            animation: fadeLeft 1.4s 0.8s ease both;
         }
-        button:hover { background: #9575cd; transform: scale(1.05); }
+        .ctrl-btn {
+            background: rgba(4, 6, 17, 0.8);
+            border: 1px solid rgba(0,245,255,0.2);
+            color: var(--cyan);
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+        }
+        .ctrl-btn:hover {
+            background: rgba(0,245,255,0.1);
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0,245,255,0.2);
+            transform: scale(1.1);
+        }
+        .ctrl-btn.active {
+            background: rgba(0,245,255,0.15);
+            box-shadow: 0 0 20px rgba(0,245,255,0.3);
+        }
+
+        /* ─── INFO PANEL ─── */
+        #info-panel {
+            position: absolute;
+            bottom: 30px; left: 30px;
+            z-index: 200;
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 28px;
+            max-width: 340px;
+            backdrop-filter: blur(25px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.4);
+            transform: translateY(120%) scale(0.9);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+        #info-panel.active {
+            transform: translateY(0) scale(1);
+            opacity: 1;
+            pointer-events: all;
+        }
+        .panel-accent {
+            height: 3px;
+            border-radius: 3px;
+            margin-bottom: 18px;
+            background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+            animation: shimmer 3s linear infinite;
+            background-size: 200% 100%;
+        }
+        @keyframes shimmer {
+            from { background-position: 100% 0; }
+            to   { background-position: -100% 0; }
+        }
+        #info-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, var(--cyan), var(--violet));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        #info-region {
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            margin-bottom: 14px;
+        }
+        #info-desc {
+            font-size: 0.85rem;
+            line-height: 1.7;
+            color: rgba(226,232,240,0.85);
+            margin-bottom: 18px;
+        }
+        #info-functions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 18px;
+        }
+        .func-tag {
+            font-size: 0.65rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(0,245,255,0.08);
+            border: 1px solid rgba(0,245,255,0.2);
+            color: var(--cyan);
+            letter-spacing: 1px;
+            animation: tagPop 0.4s ease both;
+        }
+        @keyframes tagPop {
+            from { transform: scale(0.7); opacity: 0; }
+            to   { transform: scale(1); opacity: 1; }
+        }
+        .panel-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-learn {
+            flex: 1;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, rgba(0,245,255,0.15), rgba(139,92,246,0.15));
+            border: 1px solid rgba(0,245,255,0.3);
+            color: var(--cyan);
+            border-radius: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .btn-learn:hover {
+            background: linear-gradient(135deg, rgba(0,245,255,0.25), rgba(139,92,246,0.25));
+            box-shadow: 0 0 20px rgba(0,245,255,0.2);
+            transform: translateY(-2px);
+        }
+        .btn-close {
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.4);
+            border-radius: 10px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-close:hover {
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.8);
+            transform: translateY(-2px);
+        }
+
+        /* ─── CROSSHAIR CURSOR ─── */
+        #cursor-glow {
+            position: fixed;
+            width: 20px; height: 20px;
+            pointer-events: none;
+            z-index: 9999;
+            border: 1px solid rgba(0,245,255,0.5);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s, border-color 0.3s, box-shadow 0.3s;
+            mix-blend-mode: screen;
+        }
+        #cursor-glow.hovering {
+            width: 40px; height: 40px;
+            border-color: var(--cyan);
+            box-shadow: 0 0 15px rgba(0,245,255,0.4);
+        }
+
+        /* ─── TOOLTIP ─── */
+        #tooltip {
+            position: fixed;
+            pointer-events: none;
+            z-index: 500;
+            background: rgba(4,6,17,0.9);
+            border: 1px solid rgba(0,245,255,0.25);
+            border-radius: 8px;
+            padding: 6px 14px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: var(--cyan);
+            white-space: nowrap;
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s, transform 0.2s;
+            backdrop-filter: blur(10px);
+        }
+        #tooltip.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ─── CORNER DECORATIONS ─── */
+        .corner {
+            position: fixed;
+            width: 60px; height: 60px;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.3;
+        }
+        .corner::before, .corner::after {
+            content: '';
+            position: absolute;
+            background: var(--cyan);
+        }
+        .corner::before { width: 2px; height: 30px; }
+        .corner::after  { width: 30px; height: 2px; }
+        .corner.tl { top: 15px; left: 15px; }
+        .corner.tl::before { top: 0; left: 0; }
+        .corner.tl::after  { top: 0; left: 0; }
+        .corner.tr { top: 15px; right: 15px; transform: scaleX(-1); }
+        .corner.tr::before { top: 0; left: 0; }
+        .corner.tr::after  { top: 0; left: 0; }
+        .corner.bl { bottom: 15px; left: 15px; transform: scaleY(-1); }
+        .corner.bl::before { top: 0; left: 0; }
+        .corner.bl::after  { top: 0; left: 0; }
+        .corner.br { bottom: 15px; right: 15px; transform: scale(-1); }
+        .corner.br::before { top: 0; left: 0; }
+        .corner.br::after  { top: 0; left: 0; }
     </style>
 </head>
 <body>
 
-    <div id="loading">⏳ Inicializando Redes Neuronales...</div>
+<!-- Decoraciones -->
+<div class="corner tl"></div>
+<div class="corner tr"></div>
+<div class="corner bl"></div>
+<div class="corner br"></div>
 
-    <div id="info-panel">
-        <h2 id="info-title" style="color:#b388ff; margin: 0 0 10px 0;">Estructura</h2>
-        <p id="info-desc" style="line-height: 1.5; font-size: 14px; margin-bottom: 10px;"></p>
-        <button onclick="document.getElementById('info-panel').classList.remove('active')">Cerrar</button>
+<!-- Canvas partículas -->
+<canvas id="particle-canvas"></canvas>
+
+<!-- Cursor personalizado -->
+<div id="cursor-glow"></div>
+<div id="tooltip"></div>
+
+<!-- Header -->
+<div id="header">
+    <div>
+        <h1>NEUROANATOMÍA 3D</h1>
+        <div class="subtitle">Explorador Cerebral Interactivo</div>
     </div>
-
-    <div class="legend">
-        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Mapa Interactivo</div>
-        <div class="legend-item"><div class="dot" style="background:#4444ff"></div> H. Izquierdo (Lógica)</div>
-        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> H. Derecho (Creatividad)</div>
-        <div class="legend-item"><div class="dot" style="background:#44ff44"></div> Cerebelo</div>
-        <div class="legend-item"><div class="dot" style="background:#ff44ff"></div> Tronco Encefálico</div>
+    <div class="header-right">
+        <div class="pulse-dot"></div>
+        <div class="status-text">SISTEMA ACTIVO</div>
     </div>
+</div>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
+<!-- Loading -->
+<div id="loading">
+    <div style="position:relative; width:80px; height:80px;">
+        <div class="loader-ring"></div>
+        <div class="loader-ring-2"></div>
+    </div>
+    <div class="loader-text">CARGANDO MODELO 3D</div>
+    <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+</div>
+
+<!-- Leyenda -->
+<div id="legend">
+    <div class="legend-title">Regiones Cerebrales</div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#4466ff; color:#4466ff;"></div>
+        <span>Hemisferio Izquierdo</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#fbbf24; color:#fbbf24;"></div>
+        <span>Hemisferio Derecho</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#10b981; color:#10b981;"></div>
+        <span>Cerebelo</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-dot" style="background:#f472b6; color:#f472b6;"></div>
+        <span>Tronco Encefálico</span>
+    </div>
+    <div class="legend-separator"></div>
+    <div class="legend-hint">← Click para explorar</div>
+</div>
+
+<!-- Controles -->
+<div id="controls">
+    <button class="ctrl-btn active" id="btn-rotate" title="Rotación automática">⟳</button>
+    <button class="ctrl-btn" id="btn-wireframe" title="Vista wireframe">⬡</button>
+    <button class="ctrl-btn" id="btn-reset" title="Restablecer vista">⊕</button>
+</div>
+
+<!-- Panel de información -->
+<div id="info-panel">
+    <div class="panel-accent"></div>
+    <div id="info-title">Estructura Cerebral</div>
+    <div id="info-region">Región Neural</div>
+    <p id="info-desc"></p>
+    <div id="info-functions"></div>
+    <div class="panel-buttons">
+        <a id="btn-learn" class="btn-learn" href="#" target="_blank" rel="noopener">
+            <span>↗</span> APRENDER MÁS
+        </a>
+        <button class="btn-close" id="btn-close">✕</button>
+    </div>
+</div>
+
+<script type="importmap">
+{
+    "imports": {
+        "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
+    }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+
+/* ═══════════════════════════════════════
+   PARTÍCULAS DE FONDO
+═══════════════════════════════════════ */
+const pCanvas = document.getElementById('particle-canvas');
+const pCtx    = pCanvas.getContext('2d');
+pCanvas.width  = window.innerWidth;
+pCanvas.height = window.innerHeight;
+
+const PARTICLE_COUNT = 120;
+const particles = [];
+
+class Particle {
+    constructor() { this.reset(true); }
+    reset(init = false) {
+        this.x  = Math.random() * pCanvas.width;
+        this.y  = init ? Math.random() * pCanvas.height : pCanvas.height + 10;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = -(Math.random() * 0.6 + 0.2);
+        this.size   = Math.random() * 2 + 0.5;
+        this.life   = Math.random() * 0.6 + 0.2;
+        this.maxLife = this.life;
+        const hues = [190, 260, 330, 160];
+        this.hue = hues[Math.floor(Math.random() * hues.length)];
+        this.connected = [];
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= 0.0012;
+        if (this.life <= 0 || this.y < -10) this.reset();
+    }
+    draw() {
+        const alpha = (this.life / this.maxLife) * 0.8;
+        pCtx.beginPath();
+        pCtx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        pCtx.fillStyle = `hsla(${this.hue}, 90%, 70%, ${alpha})`;
+        pCtx.shadowBlur = 6;
+        pCtx.shadowColor = `hsla(${this.hue}, 90%, 70%, ${alpha * 0.5})`;
+        pCtx.fill();
+    }
+}
+
+for (let i = 0; i < PARTICLE_COUNT; i++) particles.push(new Particle());
+
+function drawParticles() {
+    pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+    pCtx.shadowBlur = 0;
+
+    // Líneas de conexión
+    for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 100) {
+                const alpha = (1 - dist / 100) * 0.12;
+                pCtx.strokeStyle = `rgba(0, 245, 255, ${alpha})`;
+                pCtx.lineWidth = 0.5;
+                pCtx.beginPath();
+                pCtx.moveTo(particles[i].x, particles[i].y);
+                pCtx.lineTo(particles[j].x, particles[j].y);
+                pCtx.stroke();
             }
         }
-    </script>
+    }
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+    particles.forEach(p => { p.update(); p.draw(); });
+    requestAnimationFrame(drawParticles);
+}
+drawParticles();
 
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x0a0a12);
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(0, 5, 15);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+window.addEventListener('resize', () => {
+    pCanvas.width  = window.innerWidth;
+    pCanvas.height = window.innerHeight;
+});
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true; // ACTIVAR ROTACIÓN AUTOMÁTICA
-        controls.autoRotateSpeed = 0.5;
+/* ═══════════════════════════════════════
+   CURSOR PERSONALIZADO
+═══════════════════════════════════════ */
+const cursorGlow = document.getElementById('cursor-glow');
+const tooltip    = document.getElementById('tooltip');
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-        dirLight.position.set(5, 10, 7.5);
-        scene.add(dirLight);
+window.addEventListener('mousemove', e => {
+    cursorGlow.style.left = e.clientX + 'px';
+    cursorGlow.style.top  = e.clientY + 'px';
+    tooltip.style.left = (e.clientX + 20) + 'px';
+    tooltip.style.top  = (e.clientY - 10) + 'px';
+});
 
-        const brainMap = {
-            'brain_part_06': { color: 0xffff44, title: 'Hemisferio Derecho', desc: 'Controla el lado izquierdo del cuerpo y se especializa en la creatividad e intuición.' },
-            'brain_part_02': { color: 0x44ff44, title: 'Cerebelo', desc: 'Pieza fundamental para el equilibrio y la coordinación motora fina.' },
-            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Regula funciones vitales como el latido cardíaco y la respiración.' },
-            'brain_part_04': { color: 0x4444ff, title: 'Hemisferio Izquierdo', desc: 'Controla el lado derecho del cuerpo y se especializa en el lenguaje y la lógica.' }
+/* ═══════════════════════════════════════
+   THREE.JS SCENE
+═══════════════════════════════════════ */
+const scene    = new THREE.Scene();
+scene.background = new THREE.Color(0x040611);
+scene.fog = new THREE.FogExp2(0x040611, 0.025);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+camera.position.set(0, 4, 14);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+document.body.appendChild(renderer.domElement);
+renderer.domElement.style.position = 'fixed';
+renderer.domElement.style.inset = '0';
+renderer.domElement.style.zIndex = '1';
+
+/* ── Controles de órbita ── */
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping    = true;
+controls.dampingFactor    = 0.05;
+controls.autoRotate       = true;
+controls.autoRotateSpeed  = 0.6;
+controls.minDistance      = 6;
+controls.maxDistance      = 25;
+
+/* ── Iluminación ── */
+const ambLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambLight);
+
+const dirLight = new THREE.DirectionalLight(0x00f5ff, 1.2);
+dirLight.position.set(5, 10, 7.5);
+scene.add(dirLight);
+
+const backLight = new THREE.DirectionalLight(0x8b5cf6, 0.8);
+backLight.position.set(-5, -5, -5);
+scene.add(backLight);
+
+const rimLight = new THREE.PointLight(0xf472b6, 0.6, 30);
+rimLight.position.set(0, 8, -8);
+scene.add(rimLight);
+
+/* ── Partículas flotantes 3D ── */
+const starsGeo = new THREE.BufferGeometry();
+const starPositions = [];
+for (let i = 0; i < 600; i++) {
+    starPositions.push(
+        (Math.random() - 0.5) * 80,
+        (Math.random() - 0.5) * 80,
+        (Math.random() - 0.5) * 80
+    );
+}
+starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
+const starsMat = new THREE.PointsMaterial({ color: 0x8b5cf6, size: 0.08, transparent: true, opacity: 0.5 });
+scene.add(new THREE.Points(starsGeo, starsMat));
+
+/* ── Datos cerebrales ── */
+const brainData = {
+    'brain_part_06': {
+        color:     0xfbbf24,
+        emissive:  0x7c5f00,
+        title:     'Hemisferio Derecho',
+        region:    'Neocórtex — Lado Derecho',
+        desc:      'Procesa información de forma global e intuitiva. Controla el lado izquierdo del cuerpo y se especializa en creatividad, arte, música y pensamiento espacial.',
+        functions: ['Creatividad', 'Intuición', 'Arte', 'Espacial', 'Música'],
+        url:       'https://www.khanacademy.org/science/ap-biology/cell-communication-and-cell-cycle/cellular-signaling/a/the-brain'
+    },
+    'brain_part_02': {
+        color:     0x10b981,
+        emissive:  0x054d30,
+        title:     'Cerebelo',
+        region:    'Cerebelo — Sistema Motor',
+        desc:      'Coordina el movimiento voluntario, el equilibrio y la postura. Aunque representa solo el 10% del volumen cerebral, contiene más del 50% de todas las neuronas.',
+        functions: ['Equilibrio', 'Coordinación', 'Postura', 'Aprendizaje Motor'],
+        url:       'https://www.healthline.com/human-body-maps/cerebellum'
+    },
+    'brain_part_05': {
+        color:     0xf472b6,
+        emissive:  0x7c1f50,
+        title:     'Tronco Encefálico',
+        region:    'Tronco — Funciones Vitales',
+        desc:      'Es el puente entre el cerebro y la médula espinal. Regula funciones vitales automáticas como la respiración, frecuencia cardíaca, presión arterial y ciclos de sueño.',
+        functions: ['Respiración', 'Ritmo Cardíaco', 'Sueño', 'Reflejos'],
+        url:       'https://www.medicalnewstoday.com/articles/brainstem'
+    },
+    'brain_part_04': {
+        color:     0x4466ff,
+        emissive:  0x0f1a66,
+        title:     'Hemisferio Izquierdo',
+        region:    'Neocórtex — Lado Izquierdo',
+        desc:      'Procesa información de forma lógica y secuencial. Controla el lado derecho del cuerpo y es dominante en el lenguaje, matemáticas, análisis y razonamiento lógico.',
+        functions: ['Lenguaje', 'Lógica', 'Matemáticas', 'Análisis', 'Escritura'],
+        url:       'https://www.verywellmind.com/left-brain-vs-right-brain-2795005'
+    }
+};
+
+/* ── Cargar modelo FBX ── */
+let brainObject = null;
+let isWireframe = false;
+
+const loader = new FBXLoader();
+loader.load(
+    'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx',
+    (object) => {
+        const box    = new THREE.Box3().setFromObject(object);
+        const center = box.getCenter(new THREE.Vector3());
+        const size   = box.getSize(new THREE.Vector3());
+        const scale  = 8 / Math.max(size.x, size.y, size.z);
+        object.scale.setScalar(scale);
+        object.position.sub(center.multiplyScalar(scale));
+
+        object.traverse((child) => {
+            if (!child.isMesh) return;
+            const data = brainData[child.name.toLowerCase()];
+            if (data) {
+                child.material = new THREE.MeshPhongMaterial({
+                    color:     new THREE.Color(data.color),
+                    emissive:  new THREE.Color(data.emissive),
+                    shininess: 120,
+                    specular:  new THREE.Color(0x222244),
+                });
+                child.userData.info = data;
+            } else {
+                child.material = new THREE.MeshPhongMaterial({
+                    color: 0x111122,
+                    transparent: true,
+                    opacity: 0.08
+                });
+                child.userData.ignore = true;
+            }
+        });
+
+        // Animación de entrada
+        object.scale.setScalar(0);
+        scene.add(object);
+        brainObject = object;
+
+        let s = 0;
+        const targetS = scale;
+        const grow = () => {
+            s += (targetS - s) * 0.08;
+            object.scale.setScalar(s);
+            if (Math.abs(s - targetS) > 0.001) requestAnimationFrame(grow);
+            else object.scale.setScalar(targetS);
         };
+        grow();
 
-        const loader = new FBXLoader();
-        loader.load('https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx', (object) => {
-            const box = new THREE.Box3().setFromObject(object);
-            const center = box.getCenter(new THREE.Vector3());
-            const size = box.getSize(new THREE.Vector3());
-            const scale = 8 / Math.max(size.x, size.y, size.z);
-            object.scale.setScalar(scale);
-            object.position.sub(center.multiplyScalar(scale));
+        document.getElementById('loading').style.display = 'none';
+    },
+    undefined,
+    (err) => {
+        document.getElementById('loading').innerHTML = '<div style="color:#f472b6;font-family:Orbitron">Error al cargar modelo</div>';
+        console.error(err);
+    }
+);
 
-            object.traverse((child) => {
-                if (child.isMesh) {
-                    const data = brainMap[child.name.toLowerCase()];
-                    if (data) {
-                        child.material = new THREE.MeshPhongMaterial({ 
-                            color: data.color, 
-                            shininess: 100,
-                            emissive: new THREE.Color(0x000000) 
-                        });
-                        child.userData.info = data;
-                        child.userData.originalColor = data.color;
-                    } else {
-                        child.material = new THREE.MeshPhongMaterial({ color: 0x111111, transparent: true, opacity: 0.1 });
-                        child.userData.ignore = true;
-                    }
-                }
-            });
-            scene.add(object);
-            document.getElementById('loading').style.display = 'none';
-        });
+/* ── Raycaster ── */
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let hoveredObj = null;
+let pulseClock = 0;
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        let hoveredObj = null;
+window.addEventListener('mousemove', (e) => {
+    mouse.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-        // ANIMACIÓN DE HOVER (BRILLO)
-        window.addEventListener('mousemove', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(scene.children, true);
 
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            
-            // Resetear brillo anterior
-            if (hoveredObj) {
-                hoveredObj.material.emissive.setHex(0x000000);
-                hoveredObj = null;
-                document.body.style.cursor = 'default';
-            }
-
-            if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                if (mesh.userData.info && !mesh.userData.ignore) {
-                    mesh.material.emissive.setHex(0x333333); // Brillo suave
-                    hoveredObj = mesh;
-                    document.body.style.cursor = 'pointer';
-                }
-            }
-        });
-
-        window.addEventListener('click', (event) => {
-            // Detener rotación al interactuar
-            controls.autoRotate = false;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                if (mesh.userData.info && !mesh.userData.ignore) {
-                    const panel = document.getElementById('info-panel');
-                    document.getElementById('info-title').innerText = "🧠 " + mesh.userData.info.title;
-                    document.getElementById('info-desc').innerText = mesh.userData.info.desc;
-                    panel.classList.add('active');
-                }
-            }
-        });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
+    if (hoveredObj) {
+        if (hoveredObj.userData.info) {
+            hoveredObj.material.emissive.setHex(hoveredObj.userData.info.emissive);
         }
-        animate();
+        hoveredObj = null;
+        document.body.style.cursor = 'default';
+        cursorGlow.classList.remove('hovering');
+        tooltip.classList.remove('visible');
+    }
 
-        window.onresize = () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        };
-    </script>
+    if (hits.length > 0) {
+        const mesh = hits[0].object;
+        if (mesh.isMesh && mesh.userData.info && !mesh.userData.ignore) {
+            mesh.material.emissive.setHex(0x334466);
+            hoveredObj = mesh;
+            document.body.style.cursor = 'pointer';
+            cursorGlow.classList.add('hovering');
+            tooltip.textContent = mesh.userData.info.title;
+            tooltip.classList.add('visible');
+        }
+    }
+});
+
+/* ── Click ── */
+window.addEventListener('click', (e) => {
+    controls.autoRotate = false;
+    document.getElementById('btn-rotate').classList.remove('active');
+
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(scene.children, true);
+    if (hits.length > 0) {
+        const mesh = hits[0].object;
+        if (mesh.isMesh && mesh.userData.info && !mesh.userData.ignore) {
+            showPanel(mesh.userData.info);
+            pulseObject(mesh);
+        }
+    }
+});
+
+/* ── Panel de info ── */
+function showPanel(info) {
+    const panel = document.getElementById('info-panel');
+    panel.classList.remove('active');
+
+    setTimeout(() => {
+        document.getElementById('info-title').textContent  = info.title;
+        document.getElementById('info-region').textContent = info.region;
+        document.getElementById('info-desc').textContent   = info.desc;
+
+        const funcsEl = document.getElementById('info-functions');
+        funcsEl.innerHTML = '';
+        info.functions.forEach((fn, i) => {
+            const tag = document.createElement('span');
+            tag.className = 'func-tag';
+            tag.textContent = fn;
+            tag.style.animationDelay = `${i * 0.08}s`;
+            funcsEl.appendChild(tag);
+        });
+
+        const learnBtn = document.getElementById('btn-learn');
+        learnBtn.href = info.url;
+
+        panel.classList.add('active');
+    }, 100);
+}
+
+/* ── Pulso al hacer click ── */
+function pulseObject(mesh) {
+    if (!mesh.userData.info) return;
+    const originalColor = new THREE.Color(mesh.userData.info.color);
+    let t = 0;
+    const pulse = () => {
+        t += 0.06;
+        const intensity = Math.abs(Math.sin(t)) * 0.6;
+        mesh.material.emissive.setRGB(intensity, intensity * 0.5, intensity * 0.8);
+        if (t < Math.PI * 2) requestAnimationFrame(pulse);
+        else mesh.material.emissive.setHex(mesh.userData.info.emissive);
+    };
+    pulse();
+}
+
+/* ── Controles UI ── */
+document.getElementById('btn-close').addEventListener('click', () => {
+    document.getElementById('info-panel').classList.remove('active');
+});
+
+const btnRotate = document.getElementById('btn-rotate');
+btnRotate.addEventListener('click', () => {
+    controls.autoRotate = !controls.autoRotate;
+    btnRotate.classList.toggle('active', controls.autoRotate);
+});
+
+const btnWireframe = document.getElementById('btn-wireframe');
+btnWireframe.addEventListener('click', () => {
+    isWireframe = !isWireframe;
+    btnWireframe.classList.toggle('active', isWireframe);
+    if (brainObject) {
+        brainObject.traverse(c => {
+            if (c.isMesh) c.material.wireframe = isWireframe;
+        });
+    }
+});
+
+const btnReset = document.getElementById('btn-reset');
+btnReset.addEventListener('click', () => {
+    controls.reset();
+    camera.position.set(0, 4, 14);
+    controls.autoRotate = true;
+    btnRotate.classList.add('active');
+});
+
+/* ── Resize ── */
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ── Loop ── */
+const clock = new THREE.Clock();
+function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // Luces animadas
+    rimLight.position.x = Math.sin(t * 0.5) * 10;
+    rimLight.position.z = Math.cos(t * 0.5) * 10;
+    rimLight.intensity  = 0.4 + Math.sin(t * 2) * 0.2;
+
+    // Levitación suave del cerebro
+    if (brainObject) {
+        brainObject.position.y = Math.sin(t * 0.6) * 0.15;
+    }
+
+    // Estrellas rotando
+    starsMat.opacity = 0.3 + Math.sin(t * 0.3) * 0.1;
+
+    controls.update();
+    renderer.render(scene, camera);
+}
+animate();
+</script>
+
 </body>
 </html>
