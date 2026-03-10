@@ -92,11 +92,12 @@
         scene.add(dirLight);
 
         // MAPA CORREGIDO: Basado en los IDs reales de tu FBX
+        // MAPA DEFINITIVO: Corregido según tus pruebas visuales
         const brainMap = {
-            'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Coordina el equilibrio y la precisión de los movimientos voluntarios.' },
-            'brain_part_02': { color: 0xffff44, title: 'Hemisferio Derecho', desc: 'Centro de la creatividad, intuición, reconocimiento de rostros y procesamiento espacial.' },
-            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Regula funciones vitales automáticas como la respiración, el ritmo cardíaco y la presión arterial.' },
-            'brain_part_06': { color: 0xffff44, title: 'Hemisferio Izquierdo', desc: 'Especializado en el lenguaje, el razonamiento lógico, los números y el análisis detallado.' }
+            'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Ubicado debajo de los hemisferios; coordina el equilibrio y la precisión de los movimientos.' },
+            'brain_part_02': { color: 0xffff44, title: 'Hemisferio Derecho', desc: 'Controla el lado izquierdo del cuerpo y se especializa en la creatividad e intuición espacial.' },
+            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Conecta el cerebro con la médula espinal y regula funciones vitales como la respiración.' },
+            'brain_part_06': { color: 0x44ffff, title: 'Hemisferio Izquierdo', desc: 'Controla el lado derecho del cuerpo y se especializa en el lenguaje, la lógica y el análisis.' }
         };
 
         const loader = new FBXLoader();
