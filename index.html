@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cerebro 3D - Regiones interactivas</title>
     <style>
-        /* (los mismos estilos de antes) */
         body {
             margin: 0;
             overflow: hidden;
@@ -239,7 +238,6 @@
         
         // Función para crear una región
         function createRegion(color, position, scale, rotation, regionName, url, fact) {
-            // Crear forma base (combinación de geometrías para más realismo)
             const group = new THREE.Group();
             
             // Geometría principal
@@ -256,7 +254,7 @@
             mainMesh.receiveShadow = true;
             group.add(mainMesh);
             
-            // Añadir detalles (protuberancias) para parecer cerebro real
+            // Añadir detalles (protuberancias)
             const detailMat = new THREE.MeshStandardMaterial({ color: color });
             for (let i = 0; i < 5; i++) {
                 const detail = new THREE.Mesh(new THREE.SphereGeometry(0.2 + Math.random()*0.1, 6), detailMat);
@@ -274,7 +272,7 @@
             group.position.set(position[0], position[1], position[2]);
             group.rotation.set(rotation[0], rotation[1], rotation[2]);
             
-            // Guardar metadatos para interacción
+            // Guardar metadatos
             group.userData = {
                 clickable: true,
                 region: regionName,
@@ -285,7 +283,7 @@
             return group;
         }
 
-        // Base de datos de regiones con enlaces confiables
+        // Base de datos de regiones
         const regions = [
             {
                 name: 'frontal',
@@ -373,7 +371,7 @@
             const intersects = raycaster.intersectObjects(brainGroup.children, true);
 
             if (intersects.length > 0) {
-                // Encontrar el grupo padre que contiene los metadatos
+                // Encontrar el grupo padre con metadatos
                 let hitObject = intersects[0].object;
                 while (hitObject.parent && !hitObject.userData.region) {
                     hitObject = hitObject.parent;
@@ -418,11 +416,12 @@
                 tronco: 'Tronco Encefálico'
             };
             
-            titleEl.textContent = `🧠 ${names[data.region] || 'Cerebro'}`;
-            descEl.textContent = data.fact || 'Información no disponible';
+            titleEl.textContent = `🧠 ${names[data.region]}`;
+            descEl.textContent = data.fact;
+            factEl.innerHTML = `💡 Haz clic en el enlace para más información.`;
             
             // Enlace externo
-            externalLink.href = data.url || '#';
+            externalLink.href = data.url;
             externalLink.textContent = `📚 Leer más sobre ${names[data.region]}`;
             
             panel.classList.add('active');
