@@ -96,38 +96,33 @@
             object.scale.setScalar(scale);
             object.position.sub(center.multiplyScalar(scale));
 
-            console.log("--- LISTA DE PIEZAS DETECTADAS EN TU FBX ---");
+            console.log("--- LISTA DE PIEZAS EN TU MODELO ---");
             
             object.traverse((child) => {
                 if (child.isMesh) {
-                    const name = child.name.toLowerCase();
-                    console.log("Pieza encontrada:", child.name);
+                    // Imprime el nombre real en la consola (F12)
+                    console.log("Nombre de la pieza:", child.name);
 
-                    let assigned = false;
+                    // Ponemos un material gris claro por defecto para que NO se vea negro
+                    child.material = new THREE.MeshPhongMaterial({
+                        color: 0xaaaaaa, 
+                        transparent: true,
+                        opacity: 0.9,
+                        shininess: 100
+                    });
+
+                    const name = child.name.toLowerCase();
                     for (const key in brainData) {
                         if (name.includes(key)) {
-                            child.material = new THREE.MeshPhongMaterial({
-                                color: brainData[key].color,
-                                transparent: true,
-                                opacity: 0.8,
-                                shininess: 100
-                            });
-                            child.userData.info = brainData[key];
-                            child.userData.realName = child.name;
-                            assigned = true;
+                            child.material.color.setHex(brainData[key].color);
+                            child.userData.regionKey = key;
                             break;
                         }
                     }
-
-                    if (!assigned) {
-                        child.material = new THREE.MeshPhongMaterial({ 
-                            color: Math.random() * 0xffffff, 
-                            transparent: true, 
-                            opacity: 0.6 
-                        });
-                        child.userData.info = { desc: "Esta pieza no está mapeada aún.", color: 0x888888 };
-                        child.userData.realName = child.name;
-                    }
+                    
+                    // Guardamos el nombre para mostrarlo al hacer clic
+                    child.userData.realName = child.name;
+                    child.userData.clickable = true;
                 }
             });
 
@@ -135,25 +130,6 @@
             document.getElementById('loading').style.display = 'none';
         }, undefined, (err) => {
             document.getElementById('loading').innerText = "❌ Error: " + err.message;
-        });
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('click', (event) => {
-            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const intersects = raycaster.intersectObjects(scene.children, true);
-            if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                const panel = document.getElementById('info-panel');
-                document.getElementById('info-title').innerText = mesh.userData.realName;
-                document.getElementById('info-desc').innerText = mesh.userData.info.desc;
-                document.getElementById('info-name').innerText = "ID técnico: " + mesh.name;
-                panel.classList.add('active');
-            }
         });
 
         function animate() {
