@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modelo Cerebral Interactivo - Carlos Daniel</title>
+    <title>Anatomía Cerebral - Carlos Daniel</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0a0a12; font-family: 'Segoe UI', sans-serif; color: white; }
         
@@ -30,7 +30,7 @@
             font-size: 13px; border: 1px solid rgba(124, 77, 255, 0.4);
         }
         .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-        .dot { width: 12px; height: 12px; border-radius: 3px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -44,19 +44,18 @@
 </head>
 <body>
 
-    <div id="loading">⏳ Cargando Cerebro 3D...</div>
+    <div id="loading">⏳ Cargando Modelo 3D...</div>
 
     <div id="info-panel">
         <h2 id="info-title" style="color:#b388ff; margin: 0 0 10px 0;">Estructura</h2>
         <p id="info-desc" style="line-height: 1.5; font-size: 14px; margin-bottom: 10px;"></p>
-        <p id="info-id" style="font-size: 11px; color: #666; font-style: italic;"></p>
         <button onclick="document.getElementById('info-panel').classList.remove('active')">Cerrar</button>
     </div>
 
     <div class="legend">
-        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Estructuras Identificadas</div>
-        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> Hemisferios / Corteza</div>
-        <div class="legend-item"><div class="dot" style="background:#44ffff"></div> Lóbulo Inferior</div>
+        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Estructuras Principales</div>
+        <div class="legend-item"><div class="dot" style="background:#44ffff"></div> Hemisferio Izquierdo</div>
+        <div class="legend-item"><div class="dot" style="background:#44ffff"></div> Hemisferio Derecho</div>
         <div class="legend-item"><div class="dot" style="background:#44ff44"></div> Cerebelo</div>
         <div class="legend-item"><div class="dot" style="background:#ff44ff"></div> Tronco Encefálico</div>
     </div>
@@ -86,22 +85,20 @@
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
+        new OrbitControls(camera, renderer.domElement).enableDamping = true;
 
         scene.add(new THREE.AmbientLight(0xffffff, 0.7));
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(5, 10, 7.5);
         scene.add(dirLight);
 
-        // MAPA EXCLUSIVO PARA LAS PIEZAS EXISTENTES
+        // MAPA ESTRICTO DE 4 ESTRUCTURAS
         const brainMap = {
             'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Coordina el equilibrio y la precisión de los movimientos voluntarios.' },
-            'brain_part_02': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
-            'brain_part_03': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
-            'brain_part_04': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
-            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Regula funciones vitales automáticas como la respiración y el ritmo cardíaco.' },
-            'brain_part_06': { color: 0x44ffff, title: 'Lóbulo Inferior', desc: 'Zona encargada de procesar señales auditivas y visuales inferiores.' }
+            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Regula las funciones vitales automáticas como la respiración y el pulso cardíaco.' },
+            // Asignamos los hemisferios a las piezas grandes que vimos en tus pruebas
+            'brain_part_06': { color: 0x44ffff, title: 'Hemisferio Izquierdo', desc: 'Controla el lado derecho del cuerpo y se especializa en el lenguaje, la lógica y el razonamiento.' },
+            'brain_part_02': { color: 0x44ffff, title: 'Hemisferio Derecho', desc: 'Controla el lado izquierdo del cuerpo y se especializa en la creatividad y la intuición espacial.' }
         };
 
         const loader = new FBXLoader();
@@ -129,6 +126,10 @@
                             shininess: 80
                         });
                         child.userData.info = data;
+                    } else {
+                        // Piezas no deseadas: se vuelven oscuras y no clicables
+                        child.material = new THREE.MeshPhongMaterial({ color: 0x222222, transparent: true, opacity: 0.3 });
+                        child.userData.ignore = true;
                     }
                 }
             });
@@ -148,22 +149,26 @@
             const intersects = raycaster.intersectObjects(scene.children, true);
             
             if (intersects.length > 0) {
-                // Seleccionamos la primera pieza (la superficie exterior)
                 const mesh = intersects[0].object;
-                if (mesh.userData.info) {
+                
+                // SOLO actúa si la pieza tiene información y NO está marcada para ignorar
+                if (mesh.userData.info && !mesh.userData.ignore) {
                     const panel = document.getElementById('info-panel');
                     document.getElementById('info-title').innerText = "🧠 " + mesh.userData.info.title;
                     document.getElementById('info-desc').innerText = mesh.userData.info.desc;
-                    document.getElementById('info-id').innerText = "ID técnico: " + mesh.name;
                     panel.classList.add('active');
+                } else {
+                    // Si toca algo más, cerramos el panel
+                    document.getElementById('info-panel').classList.remove('active');
                 }
             }
         });
 
         function animate() {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
+            requestAnimationFrame(() => {
+                animate();
+                renderer.render(scene, camera);
+            });
         }
         animate();
 
