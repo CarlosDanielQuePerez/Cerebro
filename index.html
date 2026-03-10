@@ -52,6 +52,26 @@
             font-size: 14px;
             margin-bottom: 16px;
         }
+        .info-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #b388ff;
+            padding: 10px 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 10px;
+            border: 1px solid rgba(180, 140, 255, 0.3);
+            transition: all 0.2s;
+        }
+        .info-link:hover {
+            background: #7c4dff;
+            color: white;
+            border-color: #7c4dff;
+        }
         .close-btn {
             background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.2);
@@ -61,9 +81,16 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.2s;
+            margin-right: 10px;
         }
         .close-btn:hover {
             background: #7c4dff;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
         }
         #controls-hint {
             position: absolute;
@@ -137,7 +164,10 @@
         <h2 id="info-title">🧠 Cerebro humano</h2>
         <p id="info-desc">Haz clic en cualquier estructura para ver información detallada.</p>
         <div id="info-fact">💡 El cerebro humano tiene aproximadamente 86 mil millones de neuronas.</div>
-        <button class="close-btn" id="close-panel">✕ Cerrar</button>
+        <div class="button-group">
+            <button class="close-btn" id="close-panel">✕ Cerrar</button>
+            <a href="#" id="info-external-link" class="info-link" target="_blank" rel="noopener noreferrer">📚 Leer más en fuente confiable</a>
+        </div>
     </div>
 
     <div class="legend">
@@ -243,9 +273,9 @@
                             child.material.color.setHex(0x5555ff);
                         } else if (name.includes('occipital')) {
                             child.material.color.setHex(0xffff55);
-                        } else if (name.includes('cerebelo')) {
+                        } else if (name.includes('cerebelo') || name.includes('cerebellum')) {
                             child.material.color.setHex(0xff55ff);
-                        } else if (name.includes('tronco')) {
+                        } else if (name.includes('tronco') || name.includes('brainstem')) {
                             child.material.color.setHex(0x55ffff);
                         } else {
                             // Color por defecto (gris rosado)
@@ -314,48 +344,94 @@
 
         window.addEventListener('click', onClick);
 
-        // --- Panel de información ---
+        // --- Panel de información con enlaces confiables ---
         const panel = document.getElementById('info-panel');
         const titleEl = document.getElementById('info-title');
         const descEl = document.getElementById('info-desc');
         const factEl = document.getElementById('info-fact');
         const closeBtn = document.getElementById('close-panel');
+        const externalLink = document.getElementById('info-external-link');
+
+        // Base de datos de enlaces a fuentes confiables [citation:1][citation:2][citation:3]
+        const reliableSources = {
+            frontal: {
+                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-frontal',
+                label: 'Kenhub - Lóbulo frontal'
+            },
+            parietal: {
+                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-parietal',
+                label: 'Kenhub - Lóbulo parietal'
+            },
+            temporal: {
+                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-temporal',
+                label: 'Kenhub - Lóbulo temporal'
+            },
+            occipital: {
+                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-occipital',
+                label: 'Kenhub - Lóbulo occipital'
+            },
+            cerebelo: {
+                url: 'https://medlineplus.gov/spanish/ency/esp_imagepages/18008.htm',
+                label: 'MedlinePlus - Cerebelo'
+            },
+            tronco: {
+                url: 'https://www.kenhub.com/es/library/anatomia-es/tronco-encefalico',
+                label: 'Kenhub - Tronco encefálico'
+            }
+        };
 
         function showInfo(partName) {
             const nameLower = partName.toLowerCase();
             let title = 'Estructura cerebral';
             let desc = 'Información no disponible para esta parte.';
             let fact = 'Intenta hacer clic en otra región.';
+            let linkInfo = null;
 
             if (nameLower.includes('frontal')) {
                 title = 'Lóbulo Frontal';
                 desc = 'Responsable del razonamiento, planificación, juicio, personalidad y movimiento voluntario.';
                 fact = '🧠 Contiene el área de Broca, esencial para el habla.';
+                linkInfo = reliableSources.frontal;
             } else if (nameLower.includes('parietal')) {
                 title = 'Lóbulo Parietal';
                 desc = 'Procesa información sensorial: tacto, presión, temperatura y dolor.';
                 fact = '📍 La corteza somatosensorial tiene un mapa del cuerpo.';
+                linkInfo = reliableSources.parietal;
             } else if (nameLower.includes('temporal')) {
                 title = 'Lóbulo Temporal';
                 desc = 'Crucial para la audición, la memoria y el reconocimiento de lenguaje.';
                 fact = '🎵 Aquí se encuentra el hipocampo, clave para la memoria.';
+                linkInfo = reliableSources.temporal;
             } else if (nameLower.includes('occipital')) {
                 title = 'Lóbulo Occipital';
                 desc = 'Centro de procesamiento visual. Interpreta forma, color y movimiento.';
                 fact = '👁️ Daños aquí pueden causar ceguera cortical.';
-            } else if (nameLower.includes('cerebelo')) {
+                linkInfo = reliableSources.occipital;
+            } else if (nameLower.includes('cerebelo') || nameLower.includes('cerebellum')) {
                 title = 'Cerebelo';
                 desc = 'Coordina movimientos finos, equilibrio y aprendizaje motor.';
                 fact = '⚖️ Tiene más neuronas que el resto del cerebro.';
-            } else if (nameLower.includes('tronco')) {
+                linkInfo = reliableSources.cerebelo;
+            } else if (nameLower.includes('tronco') || nameLower.includes('brainstem') || nameLower.includes('tallo')) {
                 title = 'Tronco Encefálico';
                 desc = 'Controla funciones vitales: respiración, ritmo cardíaco, sueño.';
                 fact = '💓 Conecta el cerebro con la médula espinal.';
+                linkInfo = reliableSources.tronco;
             }
 
             titleEl.textContent = `🧠 ${title}`;
             descEl.textContent = desc;
             factEl.innerHTML = `💡 ${fact}`;
+            
+            // Actualizar el enlace externo
+            if (linkInfo) {
+                externalLink.href = linkInfo.url;
+                externalLink.textContent = `📚 Leer más en ${linkInfo.label}`;
+                externalLink.style.display = 'inline-flex';
+            } else {
+                externalLink.style.display = 'none';
+            }
+            
             panel.classList.add('active');
         }
 
@@ -366,6 +442,7 @@
 
         // Mostrar panel inicial
         panel.classList.add('active');
+        externalLink.style.display = 'none'; // Ocultar enlace en panel inicial
 
         // --- Animación ---
         function animate() {
