@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cerebro 3D Interactivo - Carlos Daniel</title>
+    <title>Modelo Cerebral Interactivo - Carlos Daniel</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #0a0a12; font-family: 'Segoe UI', sans-serif; color: white; }
         
         #info-panel {
             position: absolute; bottom: 30px; left: 30px;
             background: rgba(20, 15, 30, 0.9); backdrop-filter: blur(15px);
-            border-left: 6px solid #7c4dff; border-radius: 16px;
+            border-left: 6px solid #b388ff; border-radius: 16px;
             padding: 25px; max-width: 320px; z-index: 1000;
             display: none; border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -29,8 +29,8 @@
             background: rgba(0,0,0,0.7); padding: 15px; border-radius: 12px;
             font-size: 13px; border: 1px solid rgba(124, 77, 255, 0.4);
         }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .dot { width: 12px; height: 12px; border-radius: 3px; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
@@ -44,7 +44,7 @@
 </head>
 <body>
 
-    <div id="loading">⏳ Cargando Estructura Cerebral...</div>
+    <div id="loading">⏳ Cargando Cerebro 3D...</div>
 
     <div id="info-panel">
         <h2 id="info-title" style="color:#b388ff; margin: 0 0 10px 0;">Estructura</h2>
@@ -54,12 +54,11 @@
     </div>
 
     <div class="legend">
-        <div class="legend-item"><div class="dot" style="background:#ff4444"></div> Lóbulo Frontal</div>
-        <div class="legend-item"><div class="dot" style="background:#44ff44"></div> Lóbulo Parietal</div>
-        <div class="legend-item"><div class="dot" style="background:#4444ff"></div> Lóbulo Temporal</div>
-        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> Lóbulo Occipital</div>
-        <div class="legend-item"><div class="dot" style="background:#ff44ff"></div> Cerebelo</div>
-        <div class="legend-item"><div class="dot" style="background:#44ffff"></div> Tronco Encefálico</div>
+        <div style="margin-bottom: 10px; font-weight: bold; color: #b388ff;">Estructuras Identificadas</div>
+        <div class="legend-item"><div class="dot" style="background:#ffff44"></div> Hemisferios / Corteza</div>
+        <div class="legend-item"><div class="dot" style="background:#44ffff"></div> Lóbulo Inferior</div>
+        <div class="legend-item"><div class="dot" style="background:#44ff44"></div> Cerebelo</div>
+        <div class="legend-item"><div class="dot" style="background:#ff44ff"></div> Tronco Encefálico</div>
     </div>
 
     <script type="importmap">
@@ -76,16 +75,6 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-        // Mapeo de datos basado en los nombres de tu modelo (Brain_Part_XX)
-        // Mapeo corregido según tu modelo específico
-        const brainMap = {
-            'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Coordina el equilibrio y la precisión de los movimientos voluntarios.' },
-            'brain_part_02': { color: 0x44ffff, title: 'Hemisferio Derecho', desc: 'Relacionado con la intuición, la creatividad, el reconocimiento de rostros y la música.' },
-            'brain_part_03': { color: 0x44ffff, title: 'Hemisferio Izquierdo', desc: 'Centro del pensamiento lógico, el lenguaje, la escritura y el razonamiento numérico.' },
-            'brain_part_04': { color: 0xffff44, title: 'Lóbulo Occipital / Posterior', desc: 'Zona encargada principalmente de la recepción e interpretación visual.' },
-            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Controla las funciones vitales automáticas como la respiración y el pulso cardíaco.' },
-            'brain_part_06': { color: 0x44ffff, title: 'Corteza Cerebral Superior', desc: 'Capa externa que procesa la información sensorial y motora compleja.' }
-        };
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a12);
 
@@ -104,6 +93,16 @@
         const dirLight = new THREE.DirectionalLight(0xffffff, 1);
         dirLight.position.set(5, 10, 7.5);
         scene.add(dirLight);
+
+        // MAPA EXCLUSIVO PARA LAS PIEZAS EXISTENTES
+        const brainMap = {
+            'brain_part_01': { color: 0x44ff44, title: 'Cerebelo', desc: 'Coordina el equilibrio y la precisión de los movimientos voluntarios.' },
+            'brain_part_02': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
+            'brain_part_03': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
+            'brain_part_04': { color: 0xffff44, title: 'Hemisferio Cerebral', desc: 'Capa externa que procesa la información sensorial y motora compleja.' },
+            'brain_part_05': { color: 0xff44ff, title: 'Tronco Encefálico', desc: 'Regula funciones vitales automáticas como la respiración y el ritmo cardíaco.' },
+            'brain_part_06': { color: 0x44ffff, title: 'Lóbulo Inferior', desc: 'Zona encargada de procesar señales auditivas y visuales inferiores.' }
+        };
 
         const loader = new FBXLoader();
         const url = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
@@ -130,55 +129,32 @@
                             shininess: 80
                         });
                         child.userData.info = data;
-                    } else {
-                        // Si aparece una pieza extra no mapeada
-                        child.material = new THREE.MeshPhongMaterial({ color: 0x333333, transparent: true, opacity: 0.4 });
-                        child.userData.info = { title: "Estructura interna", desc: "Parte de la anatomía cerebral profunda." };
                     }
-                    child.userData.idTecnico = child.name;
                 }
             });
 
             scene.add(object);
             document.getElementById('loading').style.display = 'none';
-        }, undefined, (err) => {
-            document.getElementById('loading').innerText = "❌ Error al cargar modelo";
         });
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-       window.addEventListener('click', (event) => {
-            // Ajuste de coordenadas del mouse
+        window.addEventListener('click', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, camera);
 
-            // Buscamos colisiones solo en los objetos visibles
             const intersects = raycaster.intersectObjects(scene.children, true);
-
+            
             if (intersects.length > 0) {
-                // Buscamos la primera pieza que tenga datos válidos (nuestro mapa)
-                let selectedObject = null;
-                
-                for (let i = 0; i < intersects.length; i++) {
-                    const obj = intersects[i].object;
-                    // Si la pieza tiene un nombre que empieza con "Brain_Part"
-                    if (obj.name.toLowerCase().includes('brain_part')) {
-                        selectedObject = obj;
-                        break; // Nos quedamos con la más cercana
-                    }
-                }
-
-                if (selectedObject) {
-                    const data = selectedObject.userData.info;
+                // Seleccionamos la primera pieza (la superficie exterior)
+                const mesh = intersects[0].object;
+                if (mesh.userData.info) {
                     const panel = document.getElementById('info-panel');
-                    
-                    document.getElementById('info-title').innerText = "🧠 " + data.title;
-                    document.getElementById('info-desc').innerText = data.desc;
-                    document.getElementById('info-id').innerText = "ID: " + selectedObject.name;
-                    
+                    document.getElementById('info-title').innerText = "🧠 " + mesh.userData.info.title;
+                    document.getElementById('info-desc').innerText = mesh.userData.info.desc;
+                    document.getElementById('info-id').innerText = "ID técnico: " + mesh.name;
                     panel.classList.add('active');
                 }
             }
