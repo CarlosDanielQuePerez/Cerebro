@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cerebro 3D - Regiones interactivas</title>
+    <title>Cerebro 3D - Modelo interactivo</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #111;
             color: white;
         }
@@ -149,14 +149,29 @@
             border-radius: 50px;
             z-index: 2000;
         }
+        #error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff5555;
+            font-size: 18px;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 30px;
+            border-radius: 10px;
+            z-index: 2000;
+            text-align: center;
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div id="loading">🧠 Cargando cerebro 3D...</div>
+    <div id="loading">⏳ Cargando modelo 3D del cerebro...</div>
+    <div id="error-message">❌ Error al cargar el modelo.<br>Verifica que el archivo brain.fbx esté en el repositorio.</div>
 
     <div id="info-panel">
         <h2 id="info-title">🧠 Cerebro humano</h2>
-        <p id="info-desc">Haz clic en cualquier región coloreada para ver información y acceder a fuentes confiables.</p>
+        <p id="info-desc">Haz clic en cualquier estructura para ver información detallada.</p>
         <div id="info-fact">💡 El cerebro humano tiene aproximadamente 86 mil millones de neuronas.</div>
         <div class="button-group">
             <button class="close-btn" id="close-panel">✕ Cerrar</button>
@@ -165,7 +180,7 @@
     </div>
 
     <div class="legend">
-        <h3 style="margin-top:0;">🗺️ Regiones (clic para info)</h3>
+        <h3 style="margin-top:0;">🗺️ Estructuras</h3>
         <div class="legend-item" data-region="frontal">
             <div class="color-dot" style="background: #ff5555;"></div> Lóbulo frontal
         </div>
@@ -192,6 +207,7 @@
         <span>👆 Clic en región</span>
     </div>
 
+    <!-- Scripts -->
     <script type="importmap">
         {
             "imports": {
@@ -204,143 +220,92 @@
     <script type="module">
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-        // --- Configuración ---
+        // --- Escena ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x111122);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(6, 4, 8);
+        camera.position.set(5, 3, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
         document.body.appendChild(renderer.domElement);
 
+        // Controles
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.8;
-        controls.target.set(0, 1.5, 0);
+        controls.autoRotateSpeed = 1.0;
+        controls.target.set(0, 1, 0);
 
         // Luces
         const ambientLight = new THREE.AmbientLight(0x404060);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(3, 6, 4);
+        dirLight.position.set(2, 5, 5);
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        // --- Crear el modelo 3D del cerebro con regiones de colores ---
-        const brainGroup = new THREE.Group();
-        
-        function createRegion(color, position, scale, rotation, regionName, url, fact) {
-            const group = new THREE.Group();
-            
-            // Geometría principal (forma de cerebro)
-            const mainGeo = new THREE.SphereGeometry(1, 32, 32);
-            const mainMat = new THREE.MeshStandardMaterial({ 
-                color: color,
-                emissive: new THREE.Color(color).multiplyScalar(0.1),
-                roughness: 0.5,
-                metalness: 0.1,
-                transparent: true,
-                opacity: 0.9
-            });
-            
-            const mainMesh = new THREE.Mesh(mainGeo, mainMat);
-            mainMesh.scale.set(scale[0], scale[1], scale[2]);
-            mainMesh.castShadow = true;
-            mainMesh.receiveShadow = true;
-            group.add(mainMesh);
-            
-            group.position.set(position[0], position[1], position[2]);
-            group.rotation.set(rotation[0], rotation[1], rotation[2]);
-            
-            // Metadatos para interacción
-            group.userData = {
-                clickable: true,
-                region: regionName,
-                url: url,
-                fact: fact
-            };
-            
-            return group;
-        }
+        const fillLight = new THREE.DirectionalLight(0x99aaff, 0.6);
+        fillLight.position.set(-3, 2, 4);
+        scene.add(fillLight);
 
-        // Regiones con colores y posiciones
-        const regions = [
-            {
-                name: 'frontal',
-                color: 0xff5555,
-                position: [0.8, 2.0, 0.4],
-                scale: [1.1, 0.9, 0.8],
-                rotation: [0, 0.2, 0],
-                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-frontal',
-                fact: 'Responsable del razonamiento, planificación y personalidad.'
+        const backLight = new THREE.PointLight(0x6688aa, 0.5);
+        backLight.position.set(0, 1, -6);
+        scene.add(backLight);
+
+        // --- Cargar modelo FBX (URL directa de GitHub) ---
+        const loader = new FBXLoader();
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error-message');
+
+        // ✅ URL CORREGIDA: apunta a tu archivo en GitHub
+        const directUrl = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
+
+        loader.load(
+            directUrl,
+            (object) => {
+                // Ajustar escala y posición del modelo
+                object.scale.set(0.02, 0.02, 0.02); // Cambia este valor si el modelo es muy grande/pequeño
+                object.position.set(0, 1, 0);
+                object.rotation.set(0, 0, 0);
+
+                // Activar sombras
+                object.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        
+                        // Hacer clickeable
+                        child.userData.clickable = true;
+                        child.userData.partName = child.name || 'estructura';
+                    }
+                });
+
+                scene.add(object);
+                loadingDiv.style.display = 'none';
             },
-            {
-                name: 'parietal',
-                color: 0x55ff55,
-                position: [0.4, 1.9, -0.6],
-                scale: [1.0, 0.8, 0.8],
-                rotation: [0.1, -0.1, 0.1],
-                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-parietal',
-                fact: 'Procesa información sensorial: tacto, presión, temperatura.'
+            (xhr) => {
+                const percent = Math.floor((xhr.loaded / xhr.total) * 100);
+                loadingDiv.innerHTML = `⏳ Cargando modelo: ${percent}%`;
             },
-            {
-                name: 'temporal',
-                color: 0x5555ff,
-                position: [1.2, 1.0, 0.7],
-                scale: [0.9, 0.7, 0.7],
-                rotation: [0.2, 0.3, 0.1],
-                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-temporal',
-                fact: 'Crucial para la audición, la memoria y el lenguaje.'
-            },
-            {
-                name: 'occipital',
-                color: 0xffff55,
-                position: [-0.4, 1.5, -1.0],
-                scale: [0.9, 0.7, 0.7],
-                rotation: [0.1, -0.2, 0],
-                url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-occipital',
-                fact: 'Centro de procesamiento visual.'
-            },
-            {
-                name: 'cerebelo',
-                color: 0xff55ff,
-                position: [-0.3, 0.7, -1.4],
-                scale: [0.9, 0.6, 0.6],
-                rotation: [0.2, 0.1, 0.1],
-                url: 'https://medlineplus.gov/spanish/ency/esp_imagepages/18008.htm',
-                fact: 'Coordina movimientos finos y equilibrio.'
-            },
-            {
-                name: 'tronco',
-                color: 0x55ffff,
-                position: [0.1, 0.1, -0.7],
-                scale: [0.5, 0.8, 0.5],
-                rotation: [0.2, 0, 0],
-                url: 'https://www.kenhub.com/es/library/anatomia-es/tronco-encefalico',
-                fact: 'Controla funciones vitales: respiración y ritmo cardíaco.'
+            (error) => {
+                console.error('Error cargando el modelo:', error);
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = '❌ Error al cargar el modelo.<br>Verifica que el archivo brain.fbx esté en el repositorio.';
             }
-        ];
+        );
 
-        // Añadir todas las regiones al grupo
-        regions.forEach(reg => {
-            brainGroup.add(createRegion(
-                reg.color, reg.position, reg.scale, reg.rotation, 
-                reg.name, reg.url, reg.fact
-            ));
-        });
-
-        scene.add(brainGroup);
-        
-        // Ocultar loading
-        document.getElementById('loading').style.display = 'none';
-
-        // --- Sistema de detección de clics ---
+        // --- Sistema de selección por clic ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
@@ -350,20 +315,32 @@
 
             raycaster.setFromCamera(mouse, camera);
 
-            const intersects = raycaster.intersectObjects(brainGroup.children, true);
+            // Recopilar objetos clickeables
+            const objects = [];
+            scene.traverse((obj) => {
+                if (obj.isMesh && obj.userData.clickable) {
+                    objects.push(obj);
+                }
+            });
+
+            const intersects = raycaster.intersectObjects(objects);
 
             if (intersects.length > 0) {
-                let hitObject = intersects[0].object;
-                while (hitObject.parent && !hitObject.userData.region) {
-                    hitObject = hitObject.parent;
+                const hit = intersects[0].object;
+                const partName = hit.userData.partName || hit.name || 'estructura';
+                showInfo(partName);
+
+                // Feedback visual
+                if (hit.material.emissive) {
+                    const originalEmissive = hit.material.emissive.clone();
+                    hit.material.emissive.setHex(0x444444);
+                    setTimeout(() => {
+                        hit.material.emissive.copy(originalEmissive);
+                    }, 300);
                 }
-                
-                if (hitObject.userData && hitObject.userData.region) {
-                    showInfo(hitObject.userData);
-                    
-                    controls.autoRotate = false;
-                    setTimeout(() => controls.autoRotate = true, 8000);
-                }
+
+                controls.autoRotate = false;
+                setTimeout(() => controls.autoRotate = true, 8000);
             }
         }
 
@@ -377,21 +354,51 @@
         const closeBtn = document.getElementById('close-panel');
         const externalLink = document.getElementById('info-external-link');
 
-        function showInfo(data) {
-            const names = {
-                frontal: 'Lóbulo Frontal',
-                parietal: 'Lóbulo Parietal',
-                temporal: 'Lóbulo Temporal',
-                occipital: 'Lóbulo Occipital',
-                cerebelo: 'Cerebelo',
-                tronco: 'Tronco Encefálico'
-            };
+        function showInfo(partName) {
+            const nameLower = partName.toLowerCase();
+            let title = 'Estructura cerebral';
+            let desc = 'Información no disponible para esta parte.';
+            let fact = 'Intenta hacer clic en otra región.';
+            let url = '#';
+
+            if (nameLower.includes('frontal')) {
+                title = 'Lóbulo Frontal';
+                desc = 'Responsable del razonamiento, planificación, juicio, personalidad y movimiento voluntario.';
+                fact = '🧠 Contiene el área de Broca, esencial para el habla.';
+                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-frontal';
+            } else if (nameLower.includes('parietal')) {
+                title = 'Lóbulo Parietal';
+                desc = 'Procesa información sensorial: tacto, presión, temperatura y dolor.';
+                fact = '📍 La corteza somatosensorial tiene un mapa del cuerpo.';
+                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-parietal';
+            } else if (nameLower.includes('temporal')) {
+                title = 'Lóbulo Temporal';
+                desc = 'Crucial para la audición, la memoria y el reconocimiento de lenguaje.';
+                fact = '🎵 Aquí se encuentra el hipocampo, clave para la memoria.';
+                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-temporal';
+            } else if (nameLower.includes('occipital')) {
+                title = 'Lóbulo Occipital';
+                desc = 'Centro de procesamiento visual. Interpreta forma, color y movimiento.';
+                fact = '👁️ Daños aquí pueden causar ceguera cortical.';
+                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-occipital';
+            } else if (nameLower.includes('cerebelo')) {
+                title = 'Cerebelo';
+                desc = 'Coordina movimientos finos, equilibrio y aprendizaje motor.';
+                fact = '⚖️ Tiene más neuronas que el resto del cerebro.';
+                url = 'https://medlineplus.gov/spanish/ency/esp_imagepages/18008.htm';
+            } else if (nameLower.includes('tronco')) {
+                title = 'Tronco Encefálico';
+                desc = 'Controla funciones vitales: respiración, ritmo cardíaco, sueño.';
+                fact = '💓 Conecta el cerebro con la médula espinal.';
+                url = 'https://www.kenhub.com/es/library/anatomia-es/tronco-encefalico';
+            }
+
+            titleEl.textContent = `🧠 ${title}`;
+            descEl.textContent = desc;
+            factEl.innerHTML = `💡 ${fact}`;
             
-            titleEl.textContent = `🧠 ${names[data.region]}`;
-            descEl.textContent = data.fact;
-            
-            externalLink.href = data.url;
-            externalLink.textContent = `📚 Leer más sobre ${names[data.region]}`;
+            externalLink.href = url;
+            externalLink.textContent = `📚 Leer más sobre ${title}`;
             
             panel.classList.add('active');
         }
@@ -404,16 +411,12 @@
         // Clic en leyenda
         document.querySelectorAll('.legend-item').forEach(item => {
             item.addEventListener('click', () => {
-                const region = item.dataset.region;
-                const regionData = regions.find(r => r.name === region);
-                if (regionData) showInfo(regionData);
+                showInfo(item.dataset.region);
             });
         });
 
         // Mostrar panel inicial
-        setTimeout(() => {
-            panel.classList.add('active');
-        }, 1000);
+        panel.classList.add('active');
 
         // --- Animación ---
         function animate() {
@@ -423,6 +426,7 @@
         }
         animate();
 
+        // --- Responsive ---
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
