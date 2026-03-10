@@ -149,19 +149,37 @@
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        window.addEventListener('click', (event) => {
+       window.addEventListener('click', (event) => {
+            // Ajuste de coordenadas del mouse
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
             raycaster.setFromCamera(mouse, camera);
 
+            // Buscamos colisiones solo en los objetos visibles
             const intersects = raycaster.intersectObjects(scene.children, true);
+
             if (intersects.length > 0) {
-                const mesh = intersects[0].object;
-                if (mesh.userData.info) {
+                // Buscamos la primera pieza que tenga datos válidos (nuestro mapa)
+                let selectedObject = null;
+                
+                for (let i = 0; i < intersects.length; i++) {
+                    const obj = intersects[i].object;
+                    // Si la pieza tiene un nombre que empieza con "Brain_Part"
+                    if (obj.name.toLowerCase().includes('brain_part')) {
+                        selectedObject = obj;
+                        break; // Nos quedamos con la más cercana
+                    }
+                }
+
+                if (selectedObject) {
+                    const data = selectedObject.userData.info;
                     const panel = document.getElementById('info-panel');
-                    document.getElementById('info-title').innerText = "🧠 " + mesh.userData.info.title;
-                    document.getElementById('info-desc').innerText = mesh.userData.info.desc;
-                    document.getElementById('info-id').innerText = "Pieza: " + mesh.userData.idTecnico;
+                    
+                    document.getElementById('info-title').innerText = "🧠 " + data.title;
+                    document.getElementById('info-desc').innerText = data.desc;
+                    document.getElementById('info-id').innerText = "ID: " + selectedObject.name;
+                    
                     panel.classList.add('active');
                 }
             }
