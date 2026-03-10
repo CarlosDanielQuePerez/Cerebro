@@ -3,216 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cerebro 3D - Modelo interactivo</title>
+    <title>Cerebro 3D - Escáner de Regiones</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #111;
-            color: white;
-        }
+        body { margin: 0; overflow: hidden; background-color: #0a0a12; font-family: sans-serif; color: white; }
         #info-panel {
-            position: absolute;
-            bottom: 30px;
-            left: 30px;
-            background: rgba(20, 15, 30, 0.95);
-            backdrop-filter: blur(10px);
-            border-left: 6px solid #7c4dff;
-            border-radius: 16px;
-            padding: 24px;
-            max-width: 380px;
-            color: white;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            z-index: 1000;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.1);
+            position: absolute; bottom: 30px; left: 30px;
+            background: rgba(20, 15, 30, 0.9); backdrop-filter: blur(10px);
+            border-left: 6px solid #7c4dff; border-radius: 16px;
+            padding: 20px; max-width: 300px; z-index: 1000;
+            display: none; border: 1px solid rgba(255,255,255,0.1);
         }
-        #info-panel.active {
-            pointer-events: auto;
-        }
-        #info-title {
-            margin: 0 0 8px 0;
-            font-size: 24px;
-            font-weight: 600;
-            color: #b388ff;
-        }
-        #info-desc {
-            margin: 0 0 16px 0;
-            line-height: 1.6;
-            font-size: 15px;
-            opacity: 0.9;
-        }
-        #info-fact {
-            background: rgba(124, 77, 255, 0.2);
-            padding: 16px;
-            border-radius: 12px;
-            border-left: 3px solid #7c4dff;
-            font-size: 14px;
-            margin-bottom: 16px;
-        }
-        .info-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #b388ff;
-            padding: 10px 16px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            margin-top: 10px;
-            border: 1px solid rgba(180, 140, 255, 0.3);
-            transition: all 0.2s;
-        }
-        .info-link:hover {
-            background: #7c4dff;
-            color: white;
-            border-color: #7c4dff;
-        }
-        .close-btn {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-            margin-right: 10px;
-        }
-        .close-btn:hover {
-            background: #7c4dff;
-        }
-        .button-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-        }
-        #controls-hint {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 40px;
-            backdrop-filter: blur(5px);
-            font-size: 14px;
-            z-index: 1000;
-            display: flex;
-            gap: 20px;
+        #info-panel.active { display: block; }
+        #loading {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); background: rgba(0,0,0,0.8);
+            padding: 20px; border-radius: 50px; z-index: 2000;
         }
         .legend {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(5px);
-            padding: 20px;
-            border-radius: 16px;
-            color: white;
-            z-index: 1000;
-            border: 1px solid #7c4dff;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            padding: 5px;
-            border-radius: 8px;
-        }
-        .legend-item:hover {
-            transform: translateX(-5px);
-            background: rgba(124, 77, 255, 0.2);
-        }
-        .color-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 6px;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 20px 40px;
-            border-radius: 50px;
-            z-index: 2000;
-        }
-        #error-message {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ff5555;
-            font-size: 18px;
-            background: rgba(0,0,0,0.8);
-            padding: 20px 30px;
-            border-radius: 10px;
-            z-index: 2000;
-            text-align: center;
-            display: none;
+            position: absolute; top: 20px; right: 20px;
+            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 12px;
+            font-size: 12px; border: 1px solid #7c4dff;
         }
     </style>
 </head>
 <body>
-    <div id="loading">⏳ Cargando modelo 3D del cerebro...</div>
-    <div id="error-message">❌ Error al cargar el modelo.<br>Verifica que el archivo brain.fbx esté en el repositorio.</div>
+
+    <div id="loading">⏳ Escaneando modelo 3D...</div>
 
     <div id="info-panel">
-        <h2 id="info-title">🧠 Cerebro humano</h2>
-        <p id="info-desc">Haz clic en cualquier estructura para ver información detallada.</p>
-        <div id="info-fact">💡 El cerebro humano tiene aproximadamente 86 mil millones de neuronas.</div>
-        <div class="button-group">
-            <button class="close-btn" id="close-panel">✕ Cerrar</button>
-            <a href="#" id="info-external-link" class="info-link" target="_blank" rel="noopener noreferrer">📚 Leer más</a>
-        </div>
+        <h2 id="info-title" style="color:#b388ff; margin-top:0;">Estructura</h2>
+        <p id="info-desc"></p>
+        <p id="info-name" style="font-size: 10px; color: #888;"></p>
+        <button onclick="document.getElementById('info-panel').classList.remove('active')" style="background:#7c4dff; border:none; color:white; padding:5px 10px; border-radius:5px; cursor:pointer;">Cerrar</button>
     </div>
 
     <div class="legend">
-        <h3 style="margin-top:0;">🗺️ Estructuras</h3>
-        <div class="legend-item" data-region="frontal">
-            <div class="color-dot" style="background: #ff5555;"></div> Lóbulo frontal
-        </div>
-        <div class="legend-item" data-region="parietal">
-            <div class="color-dot" style="background: #55ff55;"></div> Lóbulo parietal
-        </div>
-        <div class="legend-item" data-region="temporal">
-            <div class="color-dot" style="background: #5555ff;"></div> Lóbulo temporal
-        </div>
-        <div class="legend-item" data-region="occipital">
-            <div class="color-dot" style="background: #ffff55;"></div> Lóbulo occipital
-        </div>
-        <div class="legend-item" data-region="cerebelo">
-            <div class="color-dot" style="background: #ff55ff;"></div> Cerebelo
-        </div>
-        <div class="legend-item" data-region="tronco">
-            <div class="color-dot" style="background: #55ffff;"></div> Tronco encefálico
-        </div>
+        <b>Si ves colores aleatorios:</b><br>
+        Abre la consola (F12) y dime los nombres<br>
+        de las piezas que aparecen ahí.
     </div>
 
-    <div id="controls-hint">
-        <span>🖱️ Rotar: arrastrar</span>
-        <span>🔍 Zoom: rueda</span>
-        <span>👆 Clic en región</span>
-    </div>
-
-    <!-- Scripts -->
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+                "three": "https://unpkg.com/three@0.150.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.150.0/examples/jsm/"
             }
         }
     </script>
@@ -222,203 +57,105 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-        // --- Escena ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x111122);
+        scene.background = new THREE.Color(0x0a0a12);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(5, 3, 8);
+        camera.position.set(0, 5, 15);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
         document.body.appendChild(renderer.domElement);
 
-        // Controles
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 1.0;
-        controls.target.set(0, 1, 0);
 
-        // Luces
-        const ambientLight = new THREE.AmbientLight(0x404060);
-        scene.add(ambientLight);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(10, 10, 10);
+        scene.add(light);
 
-        const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-        dirLight.position.set(2, 5, 5);
-        dirLight.castShadow = true;
-        scene.add(dirLight);
+        const brainData = {
+            'frontal': { color: 0xff4444, desc: 'Controla el movimiento y razonamiento.' },
+            'parietal': { color: 0x44ff44, desc: 'Procesa información sensorial.' },
+            'temporal': { color: 0x4444ff, desc: 'Memoria y audición.' },
+            'occipital': { color: 0xffff44, desc: 'Procesamiento visual.' },
+            'cerebelo': { color: 0xff44ff, desc: 'Equilibrio y coordinación.' },
+            'tronco': { color: 0x44ffff, desc: 'Funciones vitales.' }
+        };
 
-        const fillLight = new THREE.DirectionalLight(0x99aaff, 0.6);
-        fillLight.position.set(-3, 2, 4);
-        scene.add(fillLight);
-
-        const backLight = new THREE.PointLight(0x6688aa, 0.5);
-        backLight.position.set(0, 1, -6);
-        scene.add(backLight);
-
-        // --- Cargar modelo FBX (URL directa de GitHub) ---
         const loader = new FBXLoader();
-        const loadingDiv = document.getElementById('loading');
-        const errorDiv = document.getElementById('error-message');
+        const url = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
 
-        // ✅ URL CORREGIDA: apunta a tu archivo en GitHub
-        const directUrl = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
+        loader.load(url, (object) => {
+            const box = new THREE.Box3().setFromObject(object);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            const scale = 8 / Math.max(size.x, size.y, size.z);
+            
+            object.scale.setScalar(scale);
+            object.position.sub(center.multiplyScalar(scale));
 
-        loader.load(
-            directUrl,
-            (object) => {
-                // Ajustar escala y posición del modelo
-                object.scale.set(0.02, 0.02, 0.02); // Cambia este valor si el modelo es muy grande/pequeño
-                object.position.set(0, 1, 0);
-                object.rotation.set(0, 0, 0);
+            console.log("--- LISTA DE PIEZAS DETECTADAS EN TU FBX ---");
+            
+            object.traverse((child) => {
+                if (child.isMesh) {
+                    const name = child.name.toLowerCase();
+                    console.log("Pieza encontrada:", child.name);
 
-                // Activar sombras
-                object.traverse((child) => {
-                    if (child.isMesh) {
-                        child.castShadow = true;
-                        child.receiveShadow = true;
-                        
-                        // Hacer clickeable
-                        child.userData.clickable = true;
-                        child.userData.partName = child.name || 'estructura';
+                    let assigned = false;
+                    for (const key in brainData) {
+                        if (name.includes(key)) {
+                            child.material = new THREE.MeshPhongMaterial({
+                                color: brainData[key].color,
+                                transparent: true,
+                                opacity: 0.8,
+                                shininess: 100
+                            });
+                            child.userData.info = brainData[key];
+                            child.userData.realName = child.name;
+                            assigned = true;
+                            break;
+                        }
                     }
-                });
 
-                scene.add(object);
-                loadingDiv.style.display = 'none';
-            },
-            (xhr) => {
-                const percent = Math.floor((xhr.loaded / xhr.total) * 100);
-                loadingDiv.innerHTML = `⏳ Cargando modelo: ${percent}%`;
-            },
-            (error) => {
-                console.error('Error cargando el modelo:', error);
-                loadingDiv.style.display = 'none';
-                errorDiv.style.display = 'block';
-                errorDiv.innerHTML = '❌ Error al cargar el modelo.<br>Verifica que el archivo brain.fbx esté en el repositorio.';
-            }
-        );
+                    if (!assigned) {
+                        child.material = new THREE.MeshPhongMaterial({ 
+                            color: Math.random() * 0xffffff, 
+                            transparent: true, 
+                            opacity: 0.6 
+                        });
+                        child.userData.info = { desc: "Esta pieza no está mapeada aún.", color: 0x888888 };
+                        child.userData.realName = child.name;
+                    }
+                }
+            });
 
-        // --- Sistema de selección por clic ---
+            scene.add(object);
+            document.getElementById('loading').style.display = 'none';
+        }, undefined, (err) => {
+            document.getElementById('loading').innerText = "❌ Error: " + err.message;
+        });
+
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        function onClick(event) {
+        window.addEventListener('click', (event) => {
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
             raycaster.setFromCamera(mouse, camera);
 
-            // Recopilar objetos clickeables
-            const objects = [];
-            scene.traverse((obj) => {
-                if (obj.isMesh && obj.userData.clickable) {
-                    objects.push(obj);
-                }
-            });
-
-            const intersects = raycaster.intersectObjects(objects);
-
+            const intersects = raycaster.intersectObjects(scene.children, true);
             if (intersects.length > 0) {
-                const hit = intersects[0].object;
-                const partName = hit.userData.partName || hit.name || 'estructura';
-                showInfo(partName);
-
-                // Feedback visual
-                if (hit.material.emissive) {
-                    const originalEmissive = hit.material.emissive.clone();
-                    hit.material.emissive.setHex(0x444444);
-                    setTimeout(() => {
-                        hit.material.emissive.copy(originalEmissive);
-                    }, 300);
-                }
-
-                controls.autoRotate = false;
-                setTimeout(() => controls.autoRotate = true, 8000);
+                const mesh = intersects[0].object;
+                const panel = document.getElementById('info-panel');
+                document.getElementById('info-title').innerText = mesh.userData.realName;
+                document.getElementById('info-desc').innerText = mesh.userData.info.desc;
+                document.getElementById('info-name').innerText = "ID técnico: " + mesh.name;
+                panel.classList.add('active');
             }
-        }
-
-        window.addEventListener('click', onClick);
-
-        // --- Panel de información ---
-        const panel = document.getElementById('info-panel');
-        const titleEl = document.getElementById('info-title');
-        const descEl = document.getElementById('info-desc');
-        const factEl = document.getElementById('info-fact');
-        const closeBtn = document.getElementById('close-panel');
-        const externalLink = document.getElementById('info-external-link');
-
-        function showInfo(partName) {
-            const nameLower = partName.toLowerCase();
-            let title = 'Estructura cerebral';
-            let desc = 'Información no disponible para esta parte.';
-            let fact = 'Intenta hacer clic en otra región.';
-            let url = '#';
-
-            if (nameLower.includes('frontal')) {
-                title = 'Lóbulo Frontal';
-                desc = 'Responsable del razonamiento, planificación, juicio, personalidad y movimiento voluntario.';
-                fact = '🧠 Contiene el área de Broca, esencial para el habla.';
-                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-frontal';
-            } else if (nameLower.includes('parietal')) {
-                title = 'Lóbulo Parietal';
-                desc = 'Procesa información sensorial: tacto, presión, temperatura y dolor.';
-                fact = '📍 La corteza somatosensorial tiene un mapa del cuerpo.';
-                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-parietal';
-            } else if (nameLower.includes('temporal')) {
-                title = 'Lóbulo Temporal';
-                desc = 'Crucial para la audición, la memoria y el reconocimiento de lenguaje.';
-                fact = '🎵 Aquí se encuentra el hipocampo, clave para la memoria.';
-                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-temporal';
-            } else if (nameLower.includes('occipital')) {
-                title = 'Lóbulo Occipital';
-                desc = 'Centro de procesamiento visual. Interpreta forma, color y movimiento.';
-                fact = '👁️ Daños aquí pueden causar ceguera cortical.';
-                url = 'https://www.kenhub.com/es/library/anatomia-es/lobulo-occipital';
-            } else if (nameLower.includes('cerebelo')) {
-                title = 'Cerebelo';
-                desc = 'Coordina movimientos finos, equilibrio y aprendizaje motor.';
-                fact = '⚖️ Tiene más neuronas que el resto del cerebro.';
-                url = 'https://medlineplus.gov/spanish/ency/esp_imagepages/18008.htm';
-            } else if (nameLower.includes('tronco')) {
-                title = 'Tronco Encefálico';
-                desc = 'Controla funciones vitales: respiración, ritmo cardíaco, sueño.';
-                fact = '💓 Conecta el cerebro con la médula espinal.';
-                url = 'https://www.kenhub.com/es/library/anatomia-es/tronco-encefalico';
-            }
-
-            titleEl.textContent = `🧠 ${title}`;
-            descEl.textContent = desc;
-            factEl.innerHTML = `💡 ${fact}`;
-            
-            externalLink.href = url;
-            externalLink.textContent = `📚 Leer más sobre ${title}`;
-            
-            panel.classList.add('active');
-        }
-
-        closeBtn.addEventListener('click', () => {
-            panel.classList.remove('active');
-            controls.autoRotate = true;
         });
 
-        // Clic en leyenda
-        document.querySelectorAll('.legend-item').forEach(item => {
-            item.addEventListener('click', () => {
-                showInfo(item.dataset.region);
-            });
-        });
-
-        // Mostrar panel inicial
-        panel.classList.add('active');
-
-        // --- Animación ---
         function animate() {
             requestAnimationFrame(animate);
             controls.update();
@@ -426,12 +163,11 @@
         }
         animate();
 
-        // --- Responsive ---
-        window.addEventListener('resize', () => {
+        window.onresize = () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        };
     </script>
 </body>
 </html>
