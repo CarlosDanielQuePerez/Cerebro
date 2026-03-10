@@ -215,7 +215,6 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -233,41 +232,21 @@
         dirLight.castShadow = true;
         scene.add(dirLight);
 
-        const fillLight = new THREE.DirectionalLight(0x99aaff, 0.6);
-        fillLight.position.set(-4, 3, 5);
-        scene.add(fillLight);
-
-        // --- Crear cerebro dividido en regiones ---
+        // --- Crear el modelo 3D del cerebro con regiones de colores ---
         const brainGroup = new THREE.Group();
         
-        // Función para crear una región
         function createRegion(color, position, scale, rotation, regionName, url, fact) {
             const group = new THREE.Group();
             
-            // Geometría principal (forma de cerebro más realista)
-            const mainGeo = new THREE.SphereGeometry(1, 40, 40);
-            // Deformar para dar forma más orgánica
-            const positionAttribute = mainGeo.attributes.position;
-            for (let i = 0; i < positionAttribute.count; i++) {
-                let x = positionAttribute.getX(i);
-                let y = positionAttribute.getY(i);
-                let z = positionAttribute.getZ(i);
-                
-                // Deformaciones sutiles
-                x *= 1.0 + 0.1 * Math.sin(y * 3) * Math.cos(z * 2);
-                y *= 0.9 + 0.05 * Math.sin(x * 4);
-                z *= 0.8 + 0.1 * Math.cos(x * 3);
-                
-                positionAttribute.setXYZ(i, x, y, z);
-            }
-            mainGeo.computeVertexNormals();
-            
+            // Geometría principal (forma de cerebro)
+            const mainGeo = new THREE.SphereGeometry(1, 32, 32);
             const mainMat = new THREE.MeshStandardMaterial({ 
                 color: color,
                 emissive: new THREE.Color(color).multiplyScalar(0.1),
                 roughness: 0.5,
                 metalness: 0.1,
-                emissiveIntensity: 0.2
+                transparent: true,
+                opacity: 0.9
             });
             
             const mainMesh = new THREE.Mesh(mainGeo, mainMat);
@@ -276,25 +255,10 @@
             mainMesh.receiveShadow = true;
             group.add(mainMesh);
             
-            // Añadir detalles (protuberancias) para simular circunvoluciones
-            const detailMat = new THREE.MeshStandardMaterial({ color: color });
-            for (let i = 0; i < 8; i++) {
-                const detail = new THREE.Mesh(new THREE.SphereGeometry(0.2 + Math.random()*0.15, 5), detailMat);
-                detail.position.set(
-                    (Math.random() - 0.5) * 1.3,
-                    (Math.random() - 0.5) * 0.9 + 0.2,
-                    (Math.random() - 0.5) * 1.2
-                );
-                detail.scale.set(1.2, 0.4 + Math.random()*0.2, 0.5 + Math.random()*0.2);
-                detail.castShadow = true;
-                detail.receiveShadow = true;
-                group.add(detail);
-            }
-            
             group.position.set(position[0], position[1], position[2]);
             group.rotation.set(rotation[0], rotation[1], rotation[2]);
             
-            // Guardar metadatos para interacción
+            // Metadatos para interacción
             group.userData = {
                 clickable: true,
                 region: regionName,
@@ -305,7 +269,7 @@
             return group;
         }
 
-        // Base de datos de regiones con enlaces confiables
+        // Regiones con colores y posiciones
         const regions = [
             {
                 name: 'frontal',
@@ -314,7 +278,7 @@
                 scale: [1.1, 0.9, 0.8],
                 rotation: [0, 0.2, 0],
                 url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-frontal',
-                fact: 'Responsable del razonamiento, planificación, juicio, personalidad y movimiento voluntario. Contiene el área de Broca, esencial para el habla.'
+                fact: 'Responsable del razonamiento, planificación y personalidad.'
             },
             {
                 name: 'parietal',
@@ -323,7 +287,7 @@
                 scale: [1.0, 0.8, 0.8],
                 rotation: [0.1, -0.1, 0.1],
                 url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-parietal',
-                fact: 'Procesa información sensorial: tacto, presión, temperatura y dolor. La corteza somatosensorial tiene un mapa del cuerpo.'
+                fact: 'Procesa información sensorial: tacto, presión, temperatura.'
             },
             {
                 name: 'temporal',
@@ -332,7 +296,7 @@
                 scale: [0.9, 0.7, 0.7],
                 rotation: [0.2, 0.3, 0.1],
                 url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-temporal',
-                fact: 'Crucial para la audición, la memoria y el reconocimiento de lenguaje. Aquí se encuentra el hipocampo, clave para la memoria.'
+                fact: 'Crucial para la audición, la memoria y el lenguaje.'
             },
             {
                 name: 'occipital',
@@ -341,7 +305,7 @@
                 scale: [0.9, 0.7, 0.7],
                 rotation: [0.1, -0.2, 0],
                 url: 'https://www.kenhub.com/es/library/anatomia-es/lobulo-occipital',
-                fact: 'Centro de procesamiento visual. Interpreta forma, color y movimiento. Daños aquí pueden causar ceguera cortical.'
+                fact: 'Centro de procesamiento visual.'
             },
             {
                 name: 'cerebelo',
@@ -350,7 +314,7 @@
                 scale: [0.9, 0.6, 0.6],
                 rotation: [0.2, 0.1, 0.1],
                 url: 'https://medlineplus.gov/spanish/ency/esp_imagepages/18008.htm',
-                fact: 'Coordina movimientos finos, equilibrio y aprendizaje motor. Tiene más neuronas que el resto del cerebro juntas.'
+                fact: 'Coordina movimientos finos y equilibrio.'
             },
             {
                 name: 'tronco',
@@ -359,22 +323,16 @@
                 scale: [0.5, 0.8, 0.5],
                 rotation: [0.2, 0, 0],
                 url: 'https://www.kenhub.com/es/library/anatomia-es/tronco-encefalico',
-                fact: 'Controla funciones vitales: respiración, ritmo cardíaco, sueño. Conecta el cerebro con la médula espinal.'
+                fact: 'Controla funciones vitales: respiración y ritmo cardíaco.'
             }
         ];
 
-        // Crear y añadir cada región
+        // Añadir todas las regiones al grupo
         regions.forEach(reg => {
-            const regionGroup = createRegion(
-                reg.color, 
-                reg.position, 
-                reg.scale, 
-                reg.rotation, 
-                reg.name, 
-                reg.url, 
-                reg.fact
-            );
-            brainGroup.add(regionGroup);
+            brainGroup.add(createRegion(
+                reg.color, reg.position, reg.scale, reg.rotation, 
+                reg.name, reg.url, reg.fact
+            ));
         });
 
         scene.add(brainGroup);
@@ -382,7 +340,7 @@
         // Ocultar loading
         document.getElementById('loading').style.display = 'none';
 
-        // --- Sistema de selección por clic ---
+        // --- Sistema de detección de clics ---
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
@@ -395,7 +353,6 @@
             const intersects = raycaster.intersectObjects(brainGroup.children, true);
 
             if (intersects.length > 0) {
-                // Encontrar el grupo padre que contiene los metadatos
                 let hitObject = intersects[0].object;
                 while (hitObject.parent && !hitObject.userData.region) {
                     hitObject = hitObject.parent;
@@ -404,16 +361,6 @@
                 if (hitObject.userData && hitObject.userData.region) {
                     showInfo(hitObject.userData);
                     
-                    // Feedback visual (brillo momentáneo)
-                    hitObject.traverse(child => {
-                        if (child.material) {
-                            child.material.emissive.setHex(0x444444);
-                            setTimeout(() => {
-                                child.material.emissive.setHex(0x000000);
-                            }, 300);
-                        }
-                    });
-
                     controls.autoRotate = false;
                     setTimeout(() => controls.autoRotate = true, 8000);
                 }
@@ -442,9 +389,7 @@
             
             titleEl.textContent = `🧠 ${names[data.region]}`;
             descEl.textContent = data.fact;
-            factEl.innerHTML = `🔍 Fuente: ${data.url.includes('medlineplus') ? 'MedlinePlus' : 'Kenhub'}`;
             
-            // Actualizar enlace externo
             externalLink.href = data.url;
             externalLink.textContent = `📚 Leer más sobre ${names[data.region]}`;
             
@@ -456,7 +401,7 @@
             controls.autoRotate = true;
         });
 
-        // Clic en los elementos de la leyenda
+        // Clic en leyenda
         document.querySelectorAll('.legend-item').forEach(item => {
             item.addEventListener('click', () => {
                 const region = item.dataset.region;
