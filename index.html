@@ -211,13 +211,13 @@
         backLight.position.set(0, 1, -6);
         scene.add(backLight);
 
-        // --- Cargar modelo FBX (URL directa de Google Drive) ---
+        // --- Cargar modelo FBX (URL directa de GitHub) ---
         const loader = new FBXLoader();
         const loadingDiv = document.getElementById('loading');
         const errorDiv = document.getElementById('error-message');
 
-        // URL de descarga directa para brain.fbx (proporcionada por el usuario)
-        const directUrl = 'https://drive.google.com/uc?export=download&id=1ITcO6YD7jPxgrIKQ7iP1uA3nhWqIwt6a';
+        // URL directa del archivo brain.fbx en GitHub
+        const directUrl = 'https://raw.githubusercontent.com/CarlosDanielQuePerez/Cerebro/main/brain.fbx';
 
         loader.load(
             directUrl,
